@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hridayam Automation | HCAH</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Load FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="container">
+        <div class="glass-card">
+            <header>
+                <h1>Hridayam Automation</h1>
+                <p>Seamlessly upload and automate your data entry</p>
+            </header>
+
+            <form id="automationForm">
+                <div class="input-group">
+                    <label for="uid"><i class="fas fa-id-badge"></i> Employee ID (UID)</label>
+                    <input type="text" id="uid" name="uid" placeholder="Enter your EMP ID" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="doctor_name"><i class="fas fa-user-md"></i> Doctor Name</label>
+                    <select id="doctor_name" name="doctor_name" required>
+                        <option value="Kamal Kumar">Kamal Kumar</option>
+                        <option value="P C Saxena">P C Saxena</option>
+                        <option value="Nishant Tripathi">Nishant Tripathi</option>
+                        <option value="Mohd. Shahid">Mohd. Shahid</option>
+                        <option value="Anil Agarwal U">Anil Agarwal U</option>
+                        <option value="Omen M. Hasan">Omen M. Hasan</option>
+                        <option value="Harish Srivastava">Harish Srivastava</option>
+                        <option value="B K Singh">B K Singh</option>
+                        <option value="Vikash Agrawal">Vikash Agrawal</option>
+                        <option value="Ashish Jaiswal">Ashish Jaiswal</option>
+                        <option value="Saumik Ghosh">Saumik Ghosh</option>
+                        <option value="Sudhakar Singh">Sudhakar Singh</option>
+                    </select>
+                </div>
+
+                <div class="input-group file-upload-wrapper">
+                    <label for="file"><i class="fas fa-file-excel"></i> Excel Data File</label>
+                    <div class="file-drop-area" id="dropArea">
+                        <span class="fake-btn">Choose File</span>
+                        <span class="file-msg">or drag and drop here</span>
+                        <input class="file-input" type="file" id="file" name="file" accept=".xlsx, .xls" required>
+                    </div>
+                </div>
+
+                <button type="submit" id="startBtn" class="glow-on-hover">
+                    <span class="btn-text">Start Automation</span>
+                    <i class="fas fa-rocket"></i>
+                </button>
+            </form>
+
+            <div class="log-console" id="logConsole">
+                <div class="log-header">
+                    <span><i class="fas fa-terminal"></i> Live Logs</span>
+                    <span class="status-indicator"></span>
+                </div>
+                <pre id="logContent">Waiting to start...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('automationForm');
+        const startBtn = document.getElementById('startBtn');
+        const logConsole = document.getElementById('logConsole');
+        const logContent = document.getElementById('logContent');
+        const fileInput = document.getElementById('file');
+        const dropArea = document.getElementById('dropArea');
+        const fileMsg = document.querySelector('.file-msg');
+
+        // File Upload UI Interaction
+        fileInput.addEventListener('click', () => {
+            fileInput.value = '';
+            fileMsg.textContent = 'or drag and drop here';
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                fileMsg.textContent = fileInput.files[0].name;
+            } else {
+                fileMsg.textContent = 'or drag and drop here';
+            }
+        });
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropArea.classList.add('highlight');
+        }
+
+        function unhighlight(e) {
+            dropArea.classList.remove('highlight');
+        }
+
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            if (files.length > 0) {
+                fileMsg.textContent = files[0].name;
+            }
+        }
+
+        // Form Submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+
+            // UI Feedback
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Initializing...';
+            logConsole.style.display = 'block';
+            logConsole.style.opacity = '1';
+            logContent.textContent = "Request sent. Waiting for server...";
+
+            try {
+                // Start log stream immediately
+                startLogStream();
+
+                const response = await fetch('/start', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'Server error');
+                }
+
+                startBtn.innerHTML = '<span class="btn-text">Running...</span> <i class="fas fa-cog fa-spin"></i>';
+
+            } catch (error) {
+                logContent.textContent += '\nError starting automation: ' + error.message;
+                startBtn.disabled = false;
+                startBtn.innerHTML = '<span class="btn-text">Start Automation</span> <i class="fas fa-rocket"></i>';
+            }
+        });
+
+        function startLogStream() {
+            logContent.textContent = "";
+            const eventSource = new EventSource('/stream_logs');
+
+            eventSource.onmessage = function (event) {
+                logContent.textContent += event.data + '\n';
+                logContent.scrollTop = logContent.scrollHeight; // Auto-scroll
+
+                if (event.data.includes("Automation Complete")) {
+                    eventSource.close();
+                    startBtn.disabled = false;
+                    startBtn.innerHTML = '<span class="btn-text">Start Automation</span> <i class="fas fa-rocket"></i>';
+                    alert('Automation Completed Successfully!');
+                }
+            };
+
+            eventSource.onerror = function () {
+                // eventSource.close();
+            };
+        }
+    </script>
+</body>
+
+</html>
