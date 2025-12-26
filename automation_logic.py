@@ -59,6 +59,7 @@ def run_automation(excel_path, uid, password, doctor_name, logger_callback=print
 
     logger_callback("Launching Browser...")
     with sync_playwright() as p:
+        try:
             browser = p.chromium.launch(
                 headless=True, # Must be True for Render/Server environments
                 args=["--start-maximized", "--no-sandbox", "--disable-setuid-sandbox"] # Added flags for stability
