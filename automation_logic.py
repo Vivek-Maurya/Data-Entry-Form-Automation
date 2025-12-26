@@ -61,13 +61,14 @@ def run_automation(excel_path, uid, password, doctor_name, logger_callback=print
     with sync_playwright() as p:
         try:
             browser = p.chromium.launch(
-                channel="chromium",
+                executable_path=p.chromium.executable_path,
                 headless=True, # Must be True for Render/Server environments
                 args=[
                      "--no-sandbox",
                      "--disable-setuid-sandbox",
                      "--disable-dev-shm-usage",
-                     "--disable-gpu"
+                     "--disable-gpu",
+                     "--single-process"
                     ] # Added flags for stability
             )
             
