@@ -57,6 +57,7 @@ def run_automation(excel_path, uid, password, doctor_name, logger_callback=print
         logger_callback(f"Error reading Excel: {e}")
         return False, str(e)
 
+    logger_callback("\n")
     logger_callback("Launching Browser...")
     with sync_playwright() as p:
         try:
@@ -101,6 +102,7 @@ def run_automation(excel_path, uid, password, doctor_name, logger_callback=print
                     logger_callback("Automation stopped by user.")
                     break
                 row_count += 1
+                logger_callback("\n")
                 logger_callback(f"Processing Row {row_count}: {row.get('Patient Name', 'Unknown')}")
 
                 try:
