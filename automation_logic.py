@@ -43,7 +43,7 @@ LOCATORS = {
     'Submit':        '//*[@id="submit"]'
 }
 
-def run_automation(excel_path, uid, password, doctor_name, logger_callback=print):
+def run_automation(excel_path, uid, password, doctor_name, logger_callback=print, stop_event=None):
     """
     Runs the playwright automation.
     logger_callback: function to call with status strings.
@@ -97,6 +97,9 @@ def run_automation(excel_path, uid, password, doctor_name, logger_callback=print
             success_count = 0
 
             for index, row in df.iterrows():
+                if stop_event and stop_event.is_set():
+                    logger_callback("Automation stopped by user.")
+                    break
                 row_count += 1
                 logger_callback(f"Processing Row {row_count}: {row.get('Patient Name', 'Unknown')}")
 

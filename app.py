@@ -15,6 +15,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Global queue for log streaming
 log_queue = queue.Queue()
+# Global event to control automation stopping
+stop_event = threading.Event()
 
 def logger_callback(message):
     print(message) # Print to console
@@ -38,15 +40,21 @@ def start_automation():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
-    # Clear previous logs
+    # Clear previous logs and reset stop event
     with log_queue.mutex:
         log_queue.queue.clear()
+    stop_event.clear()
 
     # Run automation in a separate thread so it doesn't block the request
-    thread = threading.Thread(target=run_automation, args=(filepath, uid, password, doctor_name, logger_callback))
+    thread = threading.Thread(target=run_automation, args=(filepath, uid, password, doctor_name, logger_callback, stop_event))
     thread.start()
 
     return jsonify({'status': 'Automation started', 'message': 'Check logs for progress.'})
+
+@app.route('/stop', methods=['POST'])
+def stop_automation():
+    stop_event.set()
+    return jsonify({'status': 'Stopping', 'message': 'Stop signal sent.'})
 
 @app.route('/stream_logs')
 def stream_logs():

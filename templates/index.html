@@ -63,10 +63,16 @@
                     </div>
                 </div>
 
-                <button type="submit" id="startBtn" class="glow-on-hover">
-                    <span class="btn-text">Start Automation</span>
-                    <i class="fas fa-rocket"></i>
-                </button>
+                <div class="row" style="display: flex; gap: 10px;">
+                    <button type="submit" id="startBtn" class="glow-on-hover">
+                        <span class="btn-text">Start Automation</span>
+                        <i class="fas fa-rocket"></i>
+                    </button>
+                    <button type="button" id="stopBtn" class="glow-on-hover stop-btn" style="display: none;">
+                        <span class="btn-text">Stop</span>
+                        <i class="fas fa-stop"></i>
+                    </button>
+                </div>
             </form>
 
             <div class="log-console" id="logConsole">
@@ -82,6 +88,7 @@
     <script>
         const form = document.getElementById('automationForm');
         const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
         const logConsole = document.getElementById('logConsole');
         const logContent = document.getElementById('logContent');
         const fileInput = document.getElementById('file');
@@ -145,8 +152,8 @@
             const formData = new FormData(form);
 
             // UI Feedback
-            startBtn.disabled = true;
-            startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Initializing...';
+            setRunningState(true);
+
             logConsole.style.display = 'block';
             logConsole.style.opacity = '1';
             logContent.textContent = "Request sent. Waiting for server...";
@@ -169,10 +176,52 @@
 
             } catch (error) {
                 logContent.textContent += '\nError starting automation: ' + error.message;
+                setRunningState(false);
+            }
+        });
+
+        stopBtn.addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to stop the automation?')) return;
+
+            stopBtn.disabled = true;
+            stopBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Stopping...';
+
+            try {
+                await fetch('/stop', { method: 'POST' });
+                logContent.textContent += '\nStop signal sent. Waiting for process to halt...\n';
+            } catch (e) {
+                console.error(e);
+                logContent.textContent += '\nError sending stop signal.\n';
+                stopBtn.disabled = false;
+                stopBtn.innerHTML = '<span class="btn-text">Stop</span> <i class="fas fa-stop"></i>';
+            }
+        });
+
+        function setRunningState(isRunning) {
+            const inputs = form.querySelectorAll('input, select, button');
+
+            if (isRunning) {
+                // Disable inputs
+                inputs.forEach(el => {
+                    if (el.id !== 'stopBtn') el.disabled = true;
+                });
+
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'flex';
+                stopBtn.disabled = false;
+                stopBtn.innerHTML = '<span class="btn-text">Stop Automation</span> <i class="fas fa-stop"></i>';
+
+            } else {
+                // Enable inputs
+                inputs.forEach(el => el.disabled = false);
+
+                startBtn.style.display = 'flex';
+                stopBtn.style.display = 'none';
+
                 startBtn.disabled = false;
                 startBtn.innerHTML = '<span class="btn-text">Start Automation</span> <i class="fas fa-rocket"></i>';
             }
-        });
+        }
 
         function startLogStream() {
             logContent.textContent = "";
@@ -182,11 +231,14 @@
                 logContent.textContent += event.data + '\n';
                 logContent.scrollTop = logContent.scrollHeight; // Auto-scroll
 
-                if (event.data.includes("Automation Complete")) {
+                if (event.data.includes("Automation Complete") || event.data.includes("Automation stopped")) {
                     eventSource.close();
-                    startBtn.disabled = false;
-                    startBtn.innerHTML = '<span class="btn-text">Start Automation</span> <i class="fas fa-rocket"></i>';
-                    alert('Automation Completed Successfully!');
+                    setRunningState(false);
+                    if (event.data.includes("Automation Complete")) {
+                        alert('Automation Completed Successfully!');
+                    } else {
+                        alert('Automation Stopped.');
+                    }
                 }
             };
 

@@ -261,6 +261,16 @@ header p {
     background: #555;
     cursor: not-allowed;
     transform: none;
+    box-shadow: none;
+}
+
+.glow-on-hover.stop-btn {
+    background: linear-gradient(45deg, #ff416c, #ff4b2b);
+    box-shadow: 0 5px 15px rgba(255, 65, 108, 0.4);
+}
+
+.glow-on-hover.stop-btn:hover {
+    box-shadow: 0 8px 20px rgba(255, 65, 108, 0.6);
 }
 
 /* Log Console */
