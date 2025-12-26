@@ -59,18 +59,14 @@ def run_automation(excel_path, uid, password, doctor_name, logger_callback=print
 
     logger_callback("Launching Browser...")
     with sync_playwright() as p:
-        try:
-            # Check for existing user data dir, create if not exists
-            if not os.path.exists(USER_DATA_DIR):
-                os.makedirs(USER_DATA_DIR)
-
-            browser = p.chromium.launch_persistent_context(
-                user_data_dir=USER_DATA_DIR,
+            browser = p.chromium.launch(
                 headless=True, # Must be True for Render/Server environments
                 args=["--start-maximized", "--no-sandbox", "--disable-setuid-sandbox"] # Added flags for stability
             )
             
-            page = browser.pages[0] if browser.pages else browser.new_page()
+            # Create a new context with no viewport to respect maximized arg
+            context = browser.new_context(no_viewport=True)
+            page = context.new_page()
             
             # Login
             logger_callback("Navigating to Login Page...")
