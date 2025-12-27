@@ -1,13 +1,10 @@
 import pandas as pd
 
 from playwright.sync_api import sync_playwright
-import os
 import time
 
 # --- CONFIGURATION ---
-URL = 'https://hridayampsp.com/login'
-# Use a relative path for user data that works on both Windows and Linux
-USER_DATA_DIR = os.path.join(os.getcwd(), "playwright_user_data") 
+URL = 'https://hridayampsp.com/login' 
 
 LOCATORS = {
     'UID':           '//*[@id="email"]',
@@ -92,7 +89,7 @@ def run_automation(excel_path, uid, password, doctor_name, logger_callback=print
             try:
                 page.click(LOCATORS['Pinfo'])
             except:
-                logger_callback("Warning: EMP ID or Pass is wrong. Refresh the page and try again...")
+                logger_callback("Error: EMP ID or Pass is wrong. Refresh the page and try again...")
             
             row_count = 0
             success_count = 0
@@ -106,13 +103,12 @@ def run_automation(excel_path, uid, password, doctor_name, logger_callback=print
                 logger_callback(f"Processing Row {row_count}: {row.get('Patient Name', 'Unknown')}")
 
                 try:
-                    # Extract data (safely handle missing keys if needed, but assuming structure matches)
                     # dname is now passed from frontend
                     pname = str(row['Patient Name'])
                     age = str(row['Age'])
                     mnumber = str(row['Mobile Number'])
                     gender = str(row['Gender'])
-                    comp = 'N/A' # Hardcoded as per v3
+                    comp = 'N/A' 
                     weight = str(row['Weight'])
                     height = str(row['Height'])
 
@@ -133,15 +129,12 @@ def run_automation(excel_path, uid, password, doctor_name, logger_callback=print
                     page.select_option(LOCATORS['Age'], age)
                     page.fill(LOCATORS['Mobile Number'], mnumber)
                     page.select_option(LOCATORS['Gender'], gender)
-                    
-                    page.click(LOCATORS['CBP'])
-                    page.click(LOCATORS['PA'])
-                    page.click(LOCATORS['PE'])
+
+                    for key in ['CBP', 'PA', 'PE']:
+                         page.click(LOCATORS[key])
                     
                     page.fill(LOCATORS['Comp'], comp)
-                    # Keyboard enter was in v3
                     page.keyboard.press('Enter')
-                    # Click arbitrary point
                     page.mouse.click(1000, 50)
                     
                     page.fill(LOCATORS['Weight'], weight)
