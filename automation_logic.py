@@ -148,7 +148,7 @@ def run_automation(excel_path, uid, password, doctor_name, logger_callback=print
                     
                     # Post-submit wait
                     page.wait_for_timeout(4000)
-                    page.reload() 
+                    page.reload(wait_until='domcontentloaded') 
                     
                     logger_callback(f"Row {row_count} submitted successfully.")
                     success_count += 1
