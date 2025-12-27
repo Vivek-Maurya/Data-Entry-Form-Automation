@@ -98,7 +98,7 @@
         const dropArea = document.getElementById('dropArea');
         const fileMsg = document.querySelector('.file-msg');
 
-        let sessionId = null;
+
 
         // File Upload UI Interaction
         fileInput.addEventListener('click', () => {
@@ -189,10 +189,8 @@
                     throw new Error(result.error || 'Server error');
                 }
 
-                sessionId = result.session_id;
-
                 // Start log stream after we get the session ID
-                startLogStream(sessionId);
+                startLogStream();
 
                 startBtn.innerHTML = '<span class="btn-text">Running...</span> <i class="fas fa-cog fa-spin"></i>';
 
@@ -210,9 +208,7 @@
 
             try {
                 await fetch('/stop', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ session_id: sessionId })
+                    method: 'POST'
                 });
                 logContent.textContent += '\nStop signal sent. Waiting for process to halt...\n';
             } catch (e) {
@@ -249,9 +245,9 @@
             }
         }
 
-        function startLogStream(sid) {
+        function startLogStream() {
             logContent.textContent = "";
-            const eventSource = new EventSource(`/stream_logs?session_id=${sid}`);
+            const eventSource = new EventSource(`/stream_logs`);
 
             eventSource.onmessage = function (event) {
                 logContent.textContent += event.data + '\n';

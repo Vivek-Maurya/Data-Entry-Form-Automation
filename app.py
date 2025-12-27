@@ -6,7 +6,7 @@ import threading
 import time
 from automation_logic import run_automation
 
-import uuid
+import datetime
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -15,9 +15,16 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# In-memory session storage
-# Structure: { session_id: { 'queue': Queue, 'stop_event': Event, 'thread': Thread } }
-sessions = {}
+# Global queue for log streaming
+log_queue = queue.Queue()
+# Global event to control automation stopping
+stop_event = threading.Event()
+# Global reference to thread (to check if running)
+current_thread = None
+
+def logger_callback(message):
+    print(message) # Print to console
+    log_queue.put(message) # Put in queue for frontend
 
 @app.route('/')
 def index():
@@ -25,6 +32,12 @@ def index():
 
 @app.route('/start', methods=['POST'])
 def start_automation():
+    global current_thread
+    
+    # Check if automation is already running
+    if current_thread and current_thread.is_alive():
+        return jsonify({'error': 'System Busy: Another automation is currently running. Please wait.'}), 429
+
     uid = request.form.get('uid')
     password = request.form.get('password')
     doctor_name = request.form.get('doctor_name')
@@ -33,89 +46,42 @@ def start_automation():
     if not uid or not password or not doctor_name or not file:
         return jsonify({'error': 'Missing fields'}), 400
 
-    # --- SINGLE USER CONSTRAINT CHECK ---
-    # Check if any OTHER session is currently running
-    active_session_found = False
-    sessions_to_remove = []
-
-    for sid, session_data in sessions.items():
-        thread = session_data.get('thread')
-        if thread and thread.is_alive():
-            active_session_found = True
-            break
-        else:
-            # Mark finished sessions for cleanup
-            sessions_to_remove.append(sid)
-    
-    # Clean up dead sessions to free memory
-    for sid in sessions_to_remove:
-        del sessions[sid]
-
-    if active_session_found:
-        return jsonify({'error': 'System Busy: Another user is running an automation. Please try again in 2-3 minutes.'}), 429
-    # ------------------------------------
-
-    # Generate Session ID
-    session_id = str(uuid.uuid4())
-    
-    # Unique filename to prevent overwrites
-    filename = f"{session_id}_{file.filename}"
+    # Clean filename (simple timestamp to avoid collision if desired, or just overwrite)
+    # Using timestamp to avoid permission issues if file is open
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    filename = f"{timestamp}_{file.filename}"
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
-    # Initialize Session State
-    session_queue = queue.Queue()
-    session_stop_event = threading.Event()
-    
-    sessions[session_id] = {
-        'queue': session_queue,
-        'stop_event': session_stop_event
-    }
-
-    # Define session-specific callback
-    def session_logger(message):
-        print(f"[{session_id}] {message}")
-        session_queue.put(message)
+    # Clear previous logs and stop event
+    with log_queue.mutex:
+        log_queue.queue.clear()
+    stop_event.clear()
 
     # Run automation in a separate thread
-    thread = threading.Thread(
+    current_thread = threading.Thread(
         target=run_automation, 
-        args=(filepath, uid, password, doctor_name, session_logger, session_stop_event)
+        args=(filepath, uid, password, doctor_name, logger_callback, stop_event)
     )
-    sessions[session_id]['thread'] = thread
-    thread.start()
+    current_thread.start()
 
     return jsonify({
         'status': 'Automation started', 
-        'message': 'Check logs for progress.',
-        'session_id': session_id
+        'message': 'Check logs for progress.'
     })
 
 @app.route('/stop', methods=['POST'])
 def stop_automation():
-    data = request.get_json()
-    session_id = data.get('session_id')
-    
-    if not session_id or session_id not in sessions:
-        return jsonify({'error': 'Invalid session ID'}), 404
-        
-    sessions[session_id]['stop_event'].set()
+    stop_event.set()
     return jsonify({'status': 'Stopping', 'message': 'Stop signal sent.'})
 
 @app.route('/stream_logs')
 def stream_logs():
-    session_id = request.args.get('session_id')
-    
-    if not session_id or session_id not in sessions:
-        return jsonify({'error': 'Invalid session ID'}), 404
-
-    session_queue = sessions[session_id]['queue']
-
     def generate():
         while True:
             try:
                 # Wait for log with a timeout
-                message = session_queue.get(timeout=1)
+                message = log_queue.get(timeout=1)
                 yield f"data: {message}\n\n"
             except queue.Empty:
                 # Send a keep-alive comment
