@@ -122,8 +122,14 @@ def run_automation(excel_path, uid, password, doctor_name, logger_callback=print
                     # Assuming the "Submit" action reloads the form or stays on it.
                     # Based on v3 logic, it performs actions and then relies on reload()
                     
-                    page.select_option(LOCATORS['Dr Name'], doctor_name)
-                    page.fill(LOCATORS['Patient Name'], pname)
+                    try:
+                        page.select_option(LOCATORS['Dr Name'], doctor_name)
+                        page.fill(LOCATORS['Patient Name'], pname)
+                    except:
+                        logger_callback("Error: Wrong Doctor Name for the EMPI ID")
+                        logger_callback("Automation Stopped...")
+                        break
+
                     page.select_option(LOCATORS['Age'], age)
                     page.fill(LOCATORS['Mobile Number'], mnumber)
                     page.select_option(LOCATORS['Gender'], gender)
