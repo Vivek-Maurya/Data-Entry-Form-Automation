@@ -34,6 +34,7 @@
                 <div class="input-group">
                     <label for="password"><i class="fas fa-lock"></i> Password</label>
                     <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    <i class="fas fa-eye" id="togglePassword"></i>
                 </div>
 
                 <div class="input-group">
@@ -89,6 +90,8 @@
         const form = document.getElementById('automationForm');
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
         const logConsole = document.getElementById('logConsole');
         const logContent = document.getElementById('logContent');
         const fileInput = document.getElementById('file');
@@ -99,6 +102,16 @@
         fileInput.addEventListener('click', () => {
             fileInput.value = '';
             fileMsg.textContent = 'or drag and drop here';
+        });
+
+        // Password Toggle
+        togglePassword.addEventListener('click', function () {
+            // Toggle the type attribute
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+
+            // Toggle the eye slash icon
+            this.classList.toggle('fa-eye-slash');
         });
 
         fileInput.addEventListener('change', () => {

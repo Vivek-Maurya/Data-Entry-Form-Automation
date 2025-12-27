@@ -126,7 +126,7 @@ def run_automation(excel_path, uid, password, doctor_name, logger_callback=print
                         page.select_option(LOCATORS['Dr Name'], doctor_name)
                         page.fill(LOCATORS['Patient Name'], pname)
                     except:
-                        logger_callback("Error: Wrong Doctor Name for the EMPI ID")
+                        logger_callback("Error: Wrong Doctor Name for the EMP ID")
                         logger_callback("Automation Stopped...")
                         break
 

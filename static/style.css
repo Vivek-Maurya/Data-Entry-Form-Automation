@@ -113,6 +113,7 @@ header p {
 
 .input-group {
     margin-bottom: 20px;
+    position: relative; /* For absolute positioning of eye icon */
 }
 
 .input-group label {
@@ -138,15 +139,38 @@ header p {
     color: white;
     font-family: inherit;
     font-size: 1rem;
-    transition: all 0.3s ease;
+    font-size: 1rem;
+    /* transition: all 0.3s ease;  <-- Causing background position to animate (sliding arrow) */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
     box-sizing: border-box; /* Fix padding issues */
+}
+
+/* Password input specific padding for eye icon */
+.input-group input[type="password"],
+.input-group input[type="text"]#password {
+    padding-right: 40px;
+}
+
+/* Eye Icon */
+#togglePassword {
+    position: absolute;
+    right: 15px;
+    top: 42px; /* Adjust based on label height */
+    cursor: pointer;
+    color: var(--text-color);
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+#togglePassword:hover {
+    opacity: 1;
 }
 
 .input-group input:focus,
 .input-group select:focus {
     outline: none;
     border-color: var(--secondary-color);
-    background: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.1); /* Use background-color instead of background shorthand to preserve image */
     box-shadow: 0 0 10px rgba(37, 117, 252, 0.3);
 }
 
